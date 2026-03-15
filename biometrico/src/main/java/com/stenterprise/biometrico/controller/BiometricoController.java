@@ -16,72 +16,16 @@ public class BiometricoController {
     private EmpleadoRepository empleadoRepository;
 
     /**
-     * PASO 1: Handshake
-     * El biométrico pregunta: "¿Estás ahí?"
+     * Handshake: El biométrico se presenta ante Render.
      */
     @GetMapping("/cdata")
     public ResponseEntity<String> handshake(@RequestParam("SN") String sn) {
-        System.out.println(">>> Handshake recibido del equipo SN: " + sn);
-        // Respondemos con las opciones básicas para que el equipo empiece a enviar datos
+        System.out.println(">>> Conexión establecida con equipo SN: " + sn);
         return ResponseEntity.ok("GET OPTION FROM: " + sn + "\nRealtime=1\nDelay=30");
     }
 
     /**
-     * PASO 2: Recepción de Datos (Registro de Empleados)
-     * Cuando guardas un usuario en el menú del equipo, este envía un POST con table=USER
-     */
-    @PostMapping("/cdata")
-    public ResponseEntity<String> receiveData(
-            @RequestParam("table") String table, 
-            @RequestBody String body) {
-
-        System.out.println(">>> Datos recibidos de la tabla: " + table);
-
-        if ("USER".equals(table) && body != null) {
-            // El body viene con formato: PIN \t Name \t Pri \t Pass \t Card \t Grp \t TZ \t Verify
-            String[] lineas = body.split("\n");
-            
-            for (String linea : lineas) {
-                if (linea.trim().isEmpty()) continue;
-
-                String[] campos = linea.split("\t");
-                if (campos.length >= 1) {
-                    String idBio = campos[0].trim(); // ID de usuario que incrementa
-                    
-                    // Buscamos si ya existe para no duplicar, sino creamos nuevo
-                    Empleado emp = empleadoRepository.findByIdBiometrico(idBio)
-                            .orElse(new Empleado());
-                    
-                    emp.setIdBiometrico(idBio);
-                    
-                    // Mapeo según los datos que me diste:
-                    if (campos.length > 1) emp.setNombreCompleto(campos[1].trim());
-                    
-                    // Privilegio (0: Usuario, 14: Admin)
-                    if (campos.length > 2) {
-                        String pri = campos[2].trim();
-                        emp.setPrivilegio(pri.equals("14") ? "ADMINISTRADOR" : "USUARIO NORMAL");
-                    }
-                    
-                    // Modo de verificación (campo 7 en protocolo ZK estándar)
-                    if (campos.length > 7) {
-                        emp.setModoVerificacion(interpretarModo(campos[7].trim()));
-                    }
-                    
-                    emp.setFechaCreacion(LocalDateTime.now());
-                    
-                    empleadoRepository.save(emp);
-                    System.out.println(">>> Empleado guardado exitosamente: " + idBio + " - " + emp.getNombreCompleto());
-                }
-            }
-        }
-        
-        // El equipo espera un "OK" para confirmar que el servidor recibió la info
-        return ResponseEntity.ok("OK");
-    }
-
-    /**
-     * PASO 3: Heartbeat (Mantener conexión viva)
+     * Heartbeat: Mantiene la conexión activa entre el equipo y la nube.
      */
     @GetMapping("/getrequest")
     public ResponseEntity<String> heartbeat() {
@@ -89,8 +33,67 @@ public class BiometricoController {
     }
 
     /**
-     * Función auxiliar para que la DB no guarde solo números, sino texto legible
+     * Recepción de Datos: Aquí capturamos a los nuevos empleados (tabla USER).
      */
+    @PostMapping("/cdata")
+    public ResponseEntity<String> receiveData(
+            @RequestParam("table") String table, 
+            @RequestBody String body) {
+
+        System.out.println(">>> Procesando tabla: " + table);
+
+        if ("USER".equals(table) && body != null) {
+            String[] lineas = body.split("\n");
+            for (String linea : lineas) {
+                if (linea.trim().isEmpty()) continue;
+                
+                try {
+                    String[] campos = linea.split("\t");
+                    if (campos.length >= 1) {
+                        String idBio = campos[0].trim();
+                        
+                        // Buscamos si ya existe para actualizar, sino creamos nuevo
+                        Empleado emp = empleadoRepository.findByIdBiometrico(idBio)
+                                .orElse(new Empleado());
+                        
+                        emp.setIdBiometrico(idBio);
+                        
+                        // Nombre (Campo 1)
+                        if (campos.length > 1) emp.setNombreCompleto(campos[1].trim());
+                        
+                        // Privilegio (Campo 2 -> 14 es Admin, el resto Usuario)
+                        if (campos.length > 2) {
+                            String pri = campos[2].trim();
+                            emp.setPrivilegio(pri.equals("14") ? "ADMINISTRADOR" : "USUARIO NORMAL");
+                        }
+                        
+                        // Modo de Verificación (Campo 7 en protocolo estándar)
+                        if (campos.length > 7) {
+                            emp.setModoVerificacion(interpretarModo(campos[7].trim()));
+                        }
+
+                        // Los campos DNI y CE quedan nulos para ser llenados vía SQL/Web
+                        if (emp.getFechaCreacion() == null) {
+                            emp.setFechaCreacion(LocalDateTime.now());
+                        }
+
+                        empleadoRepository.save(emp);
+                        System.out.println(">>> Empleado sincronizado: " + idBio + " - " + emp.getNombreCompleto());
+                    }
+                } catch (Exception e) {
+                    System.err.println("Error procesando línea: " + e.getMessage());
+                }
+            }
+        }
+        
+        // BIODATA son las huellas, por ahora solo confirmamos recepción
+        if ("BIODATA".equals(table)) {
+            System.out.println(">>> Huella dactilar (BIODATA) recibida correctamente.");
+        }
+
+        return ResponseEntity.ok("OK");
+    }
+
     private String interpretarModo(String modo) {
         return switch (modo) {
             case "1" -> "SOLO HUELLA";

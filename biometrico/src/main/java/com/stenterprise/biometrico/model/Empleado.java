@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "empleados")
 public class Empleado {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
@@ -17,17 +18,27 @@ public class Empleado {
     private String nombreCompleto;
 
     @Column(name = "privilegio")
-    private String privilegio;
+    private String privilegio; // ADMINISTRADOR / USUARIO NORMAL
 
     @Column(name = "modo_verificacion")
-    private String modoVerificacion;
+    private String modoVerificacion; // SOLO HUELLA, PASSWORD, etc.
+
+    @Column(name = "tipo_documento")
+    private String tipoDocumento; // DNI / CARNET EXTRANJERIA
+
+    @Column(name = "numero_documento", unique = true)
+    private String numeroDocumento;
 
     @Column(name = "fecha_creacion")
     private LocalDateTime fechaCreacion;
 
-    public Empleado() {}
+    public Empleado() {
+    }
 
-    // --- GETTERS Y SETTERS (Indispensables para que el controlador no marque error) ---
+    // --- GETTERS Y SETTERS ---
+
+    public Integer getId() { return id; }
+    public void setId(Integer id) { this.id = id; }
 
     public String getIdBiometrico() { return idBiometrico; }
     public void setIdBiometrico(String idBiometrico) { this.idBiometrico = idBiometrico; }
@@ -40,6 +51,12 @@ public class Empleado {
 
     public String getModoVerificacion() { return modoVerificacion; }
     public void setModoVerificacion(String modoVerificacion) { this.modoVerificacion = modoVerificacion; }
+
+    public String getTipoDocumento() { return tipoDocumento; }
+    public void setTipoDocumento(String tipoDocumento) { this.tipoDocumento = tipoDocumento; }
+
+    public String getNumeroDocumento() { return numeroDocumento; }
+    public void setNumeroDocumento(String numeroDocumento) { this.numeroDocumento = numeroDocumento; }
 
     public LocalDateTime getFechaCreacion() { return fechaCreacion; }
     public void setFechaCreacion(LocalDateTime fechaCreacion) { this.fechaCreacion = fechaCreacion; }
