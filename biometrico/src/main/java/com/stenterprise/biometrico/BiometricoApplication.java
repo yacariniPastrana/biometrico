@@ -1,17 +1,28 @@
 package com.stenterprise.biometrico;
 
+import jakarta.annotation.PostConstruct;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import java.util.TimeZone;
 
 @SpringBootApplication
 public class BiometricoApplication {
+
     public static void main(String[] args) {
-        // Configuración directa para asegurar la conexión con el nuevo proyecto
-        System.setProperty("spring.datasource.url", "jdbc:postgresql://aws-0-us-west-2.pooler.supabase.com:6543/postgres?prepareThreshold=0&sslmode=require");
-        System.setProperty("spring.datasource.username", "postgres.huphjwgokykjjfpqrfty");
-        System.setProperty("spring.datasource.password", "PaYN1252PaYN");
-        System.setProperty("spring.datasource.driver-class-name", "org.postgresql.Driver");
-        
         SpringApplication.run(BiometricoApplication.class, args);
+    }
+
+    /**
+     * Ajuste de zona horaria global para que LocalDateTime.now() 
+     * coincida con la hora de Perú.
+     */
+    @PostConstruct
+    public void init() {
+        TimeZone.setDefault(TimeZone.getTimeZone("America/Lima"));
+        
+        System.out.println("------------------------------------------------");
+        System.out.println(">>> SISTEMA INICIADO CORRECTAMENTE");
+        System.out.println(">>> Zona Horaria: " + TimeZone.getDefault().getID());
+        System.out.println("------------------------------------------------");
     }
 }
