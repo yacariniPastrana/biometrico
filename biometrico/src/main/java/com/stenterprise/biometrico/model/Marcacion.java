@@ -10,8 +10,10 @@ public class Marcacion {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(name = "id_biometrico", length = 10)
-    private String idBiometrico;
+    // Relación con Empleado usando el campo id_biometrico de la tabla
+    @ManyToOne
+    @JoinColumn(name = "id_biometrico", referencedColumnName = "id_biometrico")
+    private Empleado empleado;
 
     @Column(name = "fecha_hora", nullable = false)
     private LocalDateTime fechaHora;
@@ -22,8 +24,51 @@ public class Marcacion {
     @Column(name = "fecha_registro")
     private LocalDateTime fechaRegistro;
 
+    public Marcacion() {}
+    
     // Getters y Setters
-    public void setIdBiometrico(String idBiometrico) { this.idBiometrico = idBiometrico; }
-    public void setFechaHora(LocalDateTime fechaHora) { this.fechaHora = fechaHora; }
-    public void setEstadoCalculado(String estadoCalculado) { this.estadoCalculado = estadoCalculado; }
+
+	public Integer getId() {
+		return id;
+	}
+
+	public void setId(Integer id) {
+		this.id = id;
+	}
+
+	public Empleado getEmpleado() {
+		return empleado;
+	}
+
+	public void setEmpleado(Empleado empleado) {
+		this.empleado = empleado;
+	}
+
+	public LocalDateTime getFechaHora() {
+		return fechaHora;
+	}
+
+	public void setFechaHora(LocalDateTime fechaHora) {
+		this.fechaHora = fechaHora;
+	}
+
+	public String getEstadoCalculado() {
+		return estadoCalculado;
+	}
+
+	public void setEstadoCalculado(String estadoCalculado) {
+		this.estadoCalculado = estadoCalculado;
+	}
+
+	public LocalDateTime getFechaRegistro() {
+		return fechaRegistro;
+	}
+
+	public void setFechaRegistro(LocalDateTime fechaRegistro) {
+		this.fechaRegistro = fechaRegistro;
+	}
+
+    
+    
+    
 }
