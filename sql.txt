@@ -1,0 +1,22 @@
+-- Tabla para los datos que mencionaste (DNI/Extranjería)
+CREATE TABLE empleados (
+    id SERIAL PRIMARY KEY,
+    id_biometrico VARCHAR(10) UNIQUE NOT NULL,
+    nombre_completo VARCHAR(150) NOT NULL,
+    tipo_documento VARCHAR(20) DEFAULT 'DNI', -- DNI o Carnet Extranjería
+    numero_documento VARCHAR(20) UNIQUE NOT NULL,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabla para los 4 estados (Ingreso, Refri, Salida)
+CREATE TABLE marcaciones (
+    id SERIAL PRIMARY KEY,
+    id_biometrico VARCHAR(10) REFERENCES empleados(id_biometrico),
+    fecha_hora TIMESTAMP NOT NULL,
+    estado_calculado VARCHAR(30) DEFAULT 'PENDIENTE', -- Aquí se guardará si es Ingreso, Refri, etc.
+    fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tu usuario administrador para pruebas
+INSERT INTO empleados (id_biometrico, nombre_completo, tipo_documento, numero_documento) 
+VALUES ('1', 'Jean Yacarini', 'DNI', '00000000');
