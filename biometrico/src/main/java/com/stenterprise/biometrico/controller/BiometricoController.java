@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 @RestController
 @RequestMapping("/iclock")
@@ -33,11 +34,9 @@ public class BiometricoController {
 
         System.out.println("\n--- TRAMA RECIBIDA: " + table + " ---");
         
-        // Caso específico detectado: Usuario viene dentro de OPERLOG
         if ("OPERLOG".equals(table) && body != null && body.contains("USER PIN=")) {
             procesarUsuarioIncrustado(body);
         } 
-        // Caso estándar: Tabla USER
         else if ("USER".equals(table) && body != null) {
             procesarUsuarioEstandar(body);
         }
@@ -62,12 +61,13 @@ public class BiometricoController {
                 String modo = extraerValor(body, "Verify=");
                 emp.setModoVerificacion(interpretarModo(modo));
 
+                // FORZAR HORA DE LIMA EXPLÍCITAMENTE
                 if (emp.getFechaCreacion() == null) {
-                    emp.setFechaCreacion(LocalDateTime.now());
+                    emp.setFechaCreacion(LocalDateTime.now(ZoneId.of("America/Lima")));
                 }
 
                 empleadoRepository.save(emp);
-                System.out.println(">>> ÉXITO: Empleado " + idBio + " (" + emp.getNombreCompleto() + ") guardado.");
+                System.out.println(">>> ÉXITO: Empleado " + idBio + " guardado a las " + emp.getFechaCreacion());
             }
         } catch (Exception e) {
             System.err.println(">>> ERROR en procesarUsuarioIncrustado: " + e.getMessage());
@@ -87,11 +87,13 @@ public class BiometricoController {
                     
                     emp.setIdBiometrico(idBio);
                     if (campos.length > 1) emp.setNombreCompleto(campos[1].trim());
+                    
                     if (emp.getFechaCreacion() == null) {
-                        emp.setFechaCreacion(LocalDateTime.now());
+                        emp.setFechaCreacion(LocalDateTime.now(ZoneId.of("America/Lima")));
                     }
+                    
                     empleadoRepository.save(emp);
-                    System.out.println(">>> ÉXITO: Empleado " + idBio + " guardado (Formato Estándar).");
+                    System.out.println(">>> ÉXITO: Empleado " + idBio + " (Estándar) guardado.");
                 }
             } catch (Exception e) {
                 System.err.println(">>> ERROR en procesarUsuarioEstandar: " + e.getMessage());
