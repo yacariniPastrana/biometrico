@@ -31,21 +31,50 @@ public class BiometricoController {
             @RequestParam("table") String table, 
             @RequestBody String body) {
 
-        // --- DIAGNÓSTICO EN LOGS ---
-        System.out.println("\n--- NUEVA TRAMA RECIBIDA ---");
-        System.out.println("TABLA: " + table);
-        System.out.println("CONTENIDO:");
-        System.out.println(body); 
-        System.out.println("---------------------------\n");
-
-        if ("USER".equals(table) && body != null) {
-            procesarUsuario(body);
+        System.out.println("\n--- TRAMA RECIBIDA: " + table + " ---");
+        
+        // Caso específico detectado: Usuario viene dentro de OPERLOG
+        if ("OPERLOG".equals(table) && body != null && body.contains("USER PIN=")) {
+            procesarUsuarioIncrustado(body);
+        } 
+        // Caso estándar: Tabla USER
+        else if ("USER".equals(table) && body != null) {
+            procesarUsuarioEstandar(body);
         }
 
         return ResponseEntity.ok("OK");
     }
 
-    private void procesarUsuario(String body) {
+    private void procesarUsuarioIncrustado(String body) {
+        try {
+            String idBio = extraerValor(body, "PIN=");
+            
+            if (idBio != null) {
+                Empleado emp = empleadoRepository.findByIdBiometrico(idBio)
+                        .orElse(new Empleado());
+                
+                emp.setIdBiometrico(idBio);
+                emp.setNombreCompleto(extraerValor(body, "Name="));
+                
+                String pri = extraerValor(body, "Pri=");
+                emp.setPrivilegio("14".equals(pri) ? "ADMINISTRADOR" : "USUARIO NORMAL");
+                
+                String modo = extraerValor(body, "Verify=");
+                emp.setModoVerificacion(interpretarModo(modo));
+
+                if (emp.getFechaCreacion() == null) {
+                    emp.setFechaCreacion(LocalDateTime.now());
+                }
+
+                empleadoRepository.save(emp);
+                System.out.println(">>> ÉXITO: Empleado " + idBio + " (" + emp.getNombreCompleto() + ") guardado.");
+            }
+        } catch (Exception e) {
+            System.err.println(">>> ERROR en procesarUsuarioIncrustado: " + e.getMessage());
+        }
+    }
+
+    private void procesarUsuarioEstandar(String body) {
         String[] lineas = body.split("\n");
         for (String linea : lineas) {
             if (linea.trim().isEmpty()) continue;
@@ -58,25 +87,39 @@ public class BiometricoController {
                     
                     emp.setIdBiometrico(idBio);
                     if (campos.length > 1) emp.setNombreCompleto(campos[1].trim());
-                    if (campos.length > 2) {
-                        emp.setPrivilegio(campos[2].trim().equals("14") ? "ADMINISTRADOR" : "USUARIO NORMAL");
-                    }
-                    if (campos.length > 7) {
-                        emp.setModoVerificacion(interpretarModo(campos[7].trim()));
-                    }
                     if (emp.getFechaCreacion() == null) {
                         emp.setFechaCreacion(LocalDateTime.now());
                     }
                     empleadoRepository.save(emp);
-                    System.out.println(">>> ÉXITO: Empleado " + idBio + " guardado en DB.");
+                    System.out.println(">>> ÉXITO: Empleado " + idBio + " guardado (Formato Estándar).");
                 }
             } catch (Exception e) {
-                System.out.println(">>> ERROR al procesar línea: " + e.getMessage());
+                System.err.println(">>> ERROR en procesarUsuarioEstandar: " + e.getMessage());
             }
         }
     }
 
+    private String extraerValor(String texto, String etiqueta) {
+        try {
+            if (!texto.contains(etiqueta)) return null;
+            int inicio = texto.indexOf(etiqueta) + etiqueta.length();
+            int finTab = texto.indexOf("\t", inicio);
+            int finEsp = texto.indexOf(" ", inicio);
+            
+            int fin;
+            if (finTab != -1 && finEsp != -1) fin = Math.min(finTab, finEsp);
+            else if (finTab != -1) fin = finTab;
+            else if (finEsp != -1) fin = finEsp;
+            else fin = texto.length();
+            
+            return texto.substring(inicio, fin).trim();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     private String interpretarModo(String modo) {
+        if (modo == null) return "DESCONOCIDO";
         return switch (modo) {
             case "1" -> "SOLO HUELLA";
             case "3" -> "SOLO PASSWORD";
