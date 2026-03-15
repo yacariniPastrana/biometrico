@@ -10,72 +10,37 @@ public class Empleado {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(name = "id_biometrico", unique = true, length = 10, nullable = false)
+    @Column(name = "id_biometrico", unique = true, nullable = false)
     private String idBiometrico;
 
-    @Column(name = "nombre_completo", length = 150, nullable = false)
+    @Column(name = "nombre_completo")
     private String nombreCompleto;
 
-    @Column(name = "tipo_documento", length = 20)
-    private String tipoDocumento;
+    @Column(name = "privilegio")
+    private String privilegio;
 
-    @Column(name = "numero_documento", unique = true, length = 20, nullable = false)
-    private String numeroDocumento;
+    @Column(name = "modo_verificacion")
+    private String modoVerificacion;
 
     @Column(name = "fecha_creacion")
     private LocalDateTime fechaCreacion;
 
-    // Hibernate necesita un constructor vacío
     public Empleado() {}
-    
-    // Getters y Setters
 
-	public Integer getId() {
-		return id;
-	}
+    // --- GETTERS Y SETTERS (Indispensables para que el controlador no marque error) ---
 
-	public void setId(Integer id) {
-		this.id = id;
-	}
+    public String getIdBiometrico() { return idBiometrico; }
+    public void setIdBiometrico(String idBiometrico) { this.idBiometrico = idBiometrico; }
 
-	public String getIdBiometrico() {
-		return idBiometrico;
-	}
+    public String getNombreCompleto() { return nombreCompleto; }
+    public void setNombreCompleto(String nombreCompleto) { this.nombreCompleto = nombreCompleto; }
 
-	public void setIdBiometrico(String idBiometrico) {
-		this.idBiometrico = idBiometrico;
-	}
+    public String getPrivilegio() { return privilegio; }
+    public void setPrivilegio(String privilegio) { this.privilegio = privilegio; }
 
-	public String getNombreCompleto() {
-		return nombreCompleto;
-	}
+    public String getModoVerificacion() { return modoVerificacion; }
+    public void setModoVerificacion(String modoVerificacion) { this.modoVerificacion = modoVerificacion; }
 
-	public void setNombreCompleto(String nombreCompleto) {
-		this.nombreCompleto = nombreCompleto;
-	}
-
-	public String getTipoDocumento() {
-		return tipoDocumento;
-	}
-
-	public void setTipoDocumento(String tipoDocumento) {
-		this.tipoDocumento = tipoDocumento;
-	}
-
-	public String getNumeroDocumento() {
-		return numeroDocumento;
-	}
-
-	public void setNumeroDocumento(String numeroDocumento) {
-		this.numeroDocumento = numeroDocumento;
-	}
-
-	public LocalDateTime getFechaCreacion() {
-		return fechaCreacion;
-	}
-
-	public void setFechaCreacion(LocalDateTime fechaCreacion) {
-		this.fechaCreacion = fechaCreacion;
-	}
-    
+    public LocalDateTime getFechaCreacion() { return fechaCreacion; }
+    public void setFechaCreacion(LocalDateTime fechaCreacion) { this.fechaCreacion = fechaCreacion; }
 }

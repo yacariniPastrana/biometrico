@@ -5,7 +5,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 
 public interface EmpleadoRepository extends JpaRepository<Empleado, Integer> {
-    
-    // Spring genera automáticamente la consulta SQL basada en el nombre del método
     Optional<Empleado> findByIdBiometrico(String idBiometrico);
 }
