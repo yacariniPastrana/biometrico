@@ -3,9 +3,10 @@ package com.stenterprise.biometrico.dto;
 public class AsistenciaDTO {
     private Integer id;
     private String nombreEmpleado;
-    private String documento; // Ejemplo: "DNI: 72458930"
+    private String documento;
     private String tipoRegistro;
     private String hora;
+    private String fecha;
     private String idBio;
 
     // Getters y Setters
@@ -19,6 +20,8 @@ public class AsistenciaDTO {
     public void setTipoRegistro(String tipoRegistro) { this.tipoRegistro = tipoRegistro; }
     public String getHora() { return hora; }
     public void setHora(String hora) { this.hora = hora; }
+    public String getFecha() { return fecha; }
+    public void setFecha(String fecha) { this.fecha = fecha; }
     public String getIdBio() { return idBio; }
     public void setIdBio(String idBio) { this.idBio = idBio; }
 }

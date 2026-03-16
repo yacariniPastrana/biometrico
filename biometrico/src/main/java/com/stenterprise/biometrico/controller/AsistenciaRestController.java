@@ -61,6 +61,7 @@ public class AsistenciaRestController {
         dto.setIdBio(m.getIdBiometrico());
         dto.setTipoRegistro(m.getTipoRegistro());
         dto.setHora(m.getFechaHora().format(formatter));
+        dto.setFecha(m.getFechaDia().toString());
 
         if (m.getEmpleado() != null) {
             dto.setNombreEmpleado(m.getEmpleado().getNombreCompleto());
