@@ -1,5 +1,6 @@
 package com.stenterprise.biometrico.controller;
 
+import com.stenterprise.biometrico.model.Marcacion;
 import com.stenterprise.biometrico.dto.AsistenciaDTO;
 import com.stenterprise.biometrico.dto.EmpleadoDTO;
 import com.stenterprise.biometrico.model.Empleado;
@@ -8,6 +9,11 @@ import com.stenterprise.biometrico.repository.MarcacionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+import java.util.HashMap;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
+import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -34,6 +40,7 @@ public class WebApiController {
             dto.setNombreCompleto(e.getNombreCompleto());
             dto.setTipoDocumento(e.getTipoDocumento());
             dto.setNumeroDocumento(e.getNumeroDocumento());
+            dto.setPrivilegio(e.getPrivilegio());
             return dto;
         }).collect(Collectors.toList());
     }
@@ -72,5 +79,44 @@ public class WebApiController {
         e.setNumeroDocumento(numero);
         empleadoRepository.save(e);
         return "Documento actualizado correctamente";
+    }
+    
+ // 4. LOGIN (Valida nombre de usuario y password/DNI)
+    @PostMapping("/auth/login")
+    public ResponseEntity<?> login(@RequestBody Map<String, String> credenciales) {
+        String usuario = credenciales.get("usuario"); // Ej: "Adm"
+        String password = credenciales.get("password"); // Ej: El DNI
+
+        return empleadoRepository.findByNombreCompleto(usuario)
+            .map(emp -> {
+                // Comparamos el password que configuramos en la DB
+                if (emp.getPassword() != null && emp.getPassword().equals(password)) {
+                    Map<String, Object> resp = new HashMap<>();
+                    resp.put("id", emp.getId());
+                    resp.put("nombre", emp.getNombreCompleto());
+                    resp.put("privilegio", emp.getPrivilegio()); // ADMIN o USER
+                    resp.put("idBiometrico", emp.getIdBiometrico());
+                    return ResponseEntity.ok(resp);
+                }
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Contraseña incorrecta");
+            })
+            .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuario no encontrado"));
+    }
+
+    // 5. EDICIÓN MANUAL (La opción de precaución para el Administrador)
+    @PostMapping("/asistencia/corregir")
+    public ResponseEntity<?> corregirAsistencia(@RequestBody Marcacion nuevaMarca) {
+        // Buscamos si el empleado existe para vincularlo
+        return empleadoRepository.findByIdBiometrico(nuevaMarca.getIdBiometrico())
+            .map(emp -> {
+                nuevaMarca.setEmpleado(emp);
+                nuevaMarca.setEsManual(true); // Flag que creamos en SQL
+                if (nuevaMarca.getFechaHora() != null) {
+                    nuevaMarca.setFechaDia(nuevaMarca.getFechaHora().toLocalDate());
+                }
+                marcacionRepository.save(nuevaMarca);
+                return ResponseEntity.ok("Marca registrada manualmente");
+            })
+            .orElse(ResponseEntity.badRequest().body("ID Biométrico no reconocido"));
     }
 }

@@ -8,6 +8,7 @@ public class AsistenciaDTO {
     private String hora;
     private String fecha;
     private String idBio;
+    private Double horasTrabajadas;
 
     // Getters y Setters
     public Integer getId() { return id; }
@@ -24,4 +25,6 @@ public class AsistenciaDTO {
     public void setFecha(String fecha) { this.fecha = fecha; }
     public String getIdBio() { return idBio; }
     public void setIdBio(String idBio) { this.idBio = idBio; }
+    public Double getHorasTrabajadas() { return horasTrabajadas; }
+    public void setHorasTrabajadas(Double horasTrabajadas) { this.horasTrabajadas = horasTrabajadas; }
 }

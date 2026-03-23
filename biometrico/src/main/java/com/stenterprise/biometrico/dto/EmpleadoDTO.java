@@ -6,6 +6,7 @@ public class EmpleadoDTO {
     private String nombreCompleto;
     private String tipoDocumento;
     private String numeroDocumento;
+    private String privilegio;
 
     // Getters y Setters
     public Integer getId() { return id; }
@@ -18,4 +19,6 @@ public class EmpleadoDTO {
     public void setTipoDocumento(String tipoDocumento) { this.tipoDocumento = tipoDocumento; }
     public String getNumeroDocumento() { return numeroDocumento; }
     public void setNumeroDocumento(String numeroDocumento) { this.numeroDocumento = numeroDocumento; }
+    public String getPrivilegio() { return privilegio; }
+    public void setPrivilegio(String privilegio) { this.privilegio = privilegio; }
 }

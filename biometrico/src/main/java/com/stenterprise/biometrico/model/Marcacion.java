@@ -28,6 +28,12 @@ public class Marcacion {
     @JoinColumn(name = "id_empleado")
     private Empleado empleado;
 
+    @Column(name = "es_manual")
+    private Boolean esManual = false;
+
+    @Column(name = "motivo_edicion")
+    private String motivoEdicion;
+    
     public Marcacion() {}
 
     // Getters y Setters
@@ -43,4 +49,8 @@ public class Marcacion {
     public void setTipoRegistro(String tipoRegistro) { this.tipoRegistro = tipoRegistro; }
     public Empleado getEmpleado() { return empleado; }
     public void setEmpleado(Empleado empleado) { this.empleado = empleado; }
+    public Boolean getEsManual() { return esManual; }
+    public void setEsManual(Boolean esManual) { this.esManual = esManual; }
+    public String getMotivoEdicion() { return motivoEdicion; }
+    public void setMotivoEdicion(String motivoEdicion) { this.motivoEdicion = motivoEdicion; }
 }

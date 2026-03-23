@@ -1,6 +1,7 @@
 package com.stenterprise.biometrico.model;
 
 import jakarta.persistence.*;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -28,9 +29,15 @@ public class Empleado {
 
     @Column(name = "numero_documento", unique = true)
     private String numeroDocumento;
+    
+    @Column(name = "fecha_cumpleanos")
+    private LocalDate fechaCumpleanos;
 
     @Column(name = "fecha_creacion")
     private LocalDateTime fechaCreacion;
+    
+    @Column(name = "password")
+    private String password;
 
     public Empleado() {}
 
@@ -51,4 +58,8 @@ public class Empleado {
     public void setNumeroDocumento(String numeroDocumento) { this.numeroDocumento = numeroDocumento; }
     public LocalDateTime getFechaCreacion() { return fechaCreacion; }
     public void setFechaCreacion(LocalDateTime fechaCreacion) { this.fechaCreacion = fechaCreacion; }
+    public LocalDate getFechaCumpleanos() { return fechaCumpleanos; }
+    public void setFechaCumpleanos(LocalDate fechaCumpleanos) { this.fechaCumpleanos = fechaCumpleanos; }
+    public String getPassword() { return password; }
+    public void setPassword(String password) { this.password = password; }
 }
