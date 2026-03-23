@@ -61,27 +61,40 @@ public class AsistenciaRestController {
             @RequestParam("idBiometrico") String idBiometrico,
             @RequestParam("fecha") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha) {
 
-        // Usamos el método de tu repositorio que ya ordena por hora
         List<Marcacion> marcas = marcacionRepository.findByIdBiometricoAndFechaDiaOrderByFechaHoraAsc(idBiometrico, fecha);
 
-        Map<String, Object> resultado = new java.util.HashMap<>();
-        resultado.put("fecha", fecha);
+        Map<String, Object> resultado = new HashMap<>();
+        resultado.put("fecha", fecha.toString());
         resultado.put("idBiometrico", idBiometrico);
 
-        if (marcas.size() < 2) {
+        if (marcas.isEmpty()) {
+            return resultado; // Retorna vacío si faltó ese día
+        }
+
+        if (marcas.size() == 1) {
+            resultado.put("entrada", marcas.get(0).getFechaHora().toLocalTime().toString());
             resultado.put("horasTrabajadas", 0.0);
-            resultado.put("observacion", "Marcas incompletas");
+            resultado.put("observacion", "Solo tiene marca de ingreso");
             return resultado;
         }
 
-        // Lógica: Primera marca = Entrada, Última marca = Salida
+        // 1ra y Última marca
         java.time.LocalDateTime entrada = marcas.get(0).getFechaHora();
         java.time.LocalDateTime salida = marcas.get(marcas.size() - 1).getFechaHora();
 
+        // marcas del refrigerio
+        if (marcas.size() >= 3) {
+            resultado.put("inicioRefrigerio", marcas.get(1).getFechaHora().toLocalTime().toString());
+        }
+        if (marcas.size() >= 4) {
+            resultado.put("finRefrigerio", marcas.get(2).getFechaHora().toLocalTime().toString());
+        }
+
+        // Cálculo de horas brutas
         double horasBrutas = java.time.Duration.between(entrada, salida).toMinutes() / 60.0;
         double horasNetas = horasBrutas;
 
-        // REGLA: Si la salida es después de las 15:00, restamos 1 hora de refrigerio
+        // Descuento de refrigerio si sale después de las 15:00
         if (salida.toLocalTime().isAfter(java.time.LocalTime.of(15, 0))) {
             horasNetas = Math.max(0, horasBrutas - 1.0);
         }
@@ -89,6 +102,7 @@ public class AsistenciaRestController {
         resultado.put("entrada", entrada.toLocalTime().toString());
         resultado.put("salida", salida.toLocalTime().toString());
         resultado.put("horasTrabajadas", Math.round(horasNetas * 100.0) / 100.0);
+        
         return resultado;
     }
 
