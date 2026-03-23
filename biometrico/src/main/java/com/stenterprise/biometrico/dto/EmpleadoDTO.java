@@ -7,6 +7,7 @@ public class EmpleadoDTO {
     private String tipoDocumento;
     private String numeroDocumento;
     private String privilegio;
+    private String fechaCumpleanos;
 
     // Getters y Setters
     public Integer getId() { return id; }
@@ -21,4 +22,6 @@ public class EmpleadoDTO {
     public void setNumeroDocumento(String numeroDocumento) { this.numeroDocumento = numeroDocumento; }
     public String getPrivilegio() { return privilegio; }
     public void setPrivilegio(String privilegio) { this.privilegio = privilegio; }
+    public String getFechaCumpleanos() { return fechaCumpleanos; }
+    public void setFechaCumpleanos(String fechaCumpleanos) { this.fechaCumpleanos = fechaCumpleanos; }
 }

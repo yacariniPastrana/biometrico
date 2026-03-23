@@ -41,6 +41,11 @@ public class WebApiController {
             dto.setTipoDocumento(e.getTipoDocumento());
             dto.setNumeroDocumento(e.getNumeroDocumento());
             dto.setPrivilegio(e.getPrivilegio());
+            if (e.getFechaCumpleanos() != null) {
+                dto.setFechaCumpleanos(e.getFechaCumpleanos().toString());
+            } else {
+                dto.setFechaCumpleanos(null);
+            }
             return dto;
         }).collect(Collectors.toList());
     }
