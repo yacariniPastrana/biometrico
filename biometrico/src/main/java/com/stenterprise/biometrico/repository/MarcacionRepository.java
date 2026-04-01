@@ -1,13 +1,20 @@
 package com.stenterprise.biometrico.repository;
 
 import com.stenterprise.biometrico.model.Marcacion;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.time.LocalDate;
 import java.util.List;
 
 public interface MarcacionRepository extends JpaRepository<Marcacion, Integer> {
-    // Busca marcas de hoy para un usuario específico para aplicar la lógica de las 4 marcas
+
+    @EntityGraph(attributePaths = {"empleado"})
+    List<Marcacion> findByFechaDia(LocalDate fechaDia);
+
+    @EntityGraph(attributePaths = {"empleado"})
+    List<Marcacion> findByFechaDiaBetween(LocalDate inicio, LocalDate fin);
+
     List<Marcacion> findByIdBiometricoAndFechaDiaOrderByFechaHoraAsc(String idBiometrico, LocalDate fechaDia);
-    // Para traer todas las marcas de un rango y que el Front las sume
+
     List<Marcacion> findByIdBiometricoAndFechaDiaBetweenOrderByFechaHoraAsc(String idBiometrico, LocalDate inicio, LocalDate fin);
 }

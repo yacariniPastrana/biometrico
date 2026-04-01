@@ -5,12 +5,13 @@ import com.stenterprise.biometrico.model.Marcacion;
 import com.stenterprise.biometrico.repository.EmpleadoRepository;
 import com.stenterprise.biometrico.repository.MarcacionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.time.LocalDate;
-import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @RestController
@@ -23,15 +24,23 @@ public class BiometricoController {
     @Autowired
     private MarcacionRepository marcacionRepository;
 
+    // Formateador estándar para asistencia (yyyy-MM-dd HH:mm:ss)
+    private static final DateTimeFormatter FORMATO_BIOMETRICO = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
     @GetMapping("/cdata")
     public ResponseEntity<String> handshake(@RequestParam("SN") String sn) {
         System.out.println(">>> Handshake SN: " + sn);
-        return ResponseEntity.ok("GET OPTION FROM: " + sn + "\nRealtime=1\nDelay=30");
+        // Respuesta estricta TEXT_PLAIN_VALUE para hardware 
+        return ResponseEntity.ok()
+                .contentType(MediaType.TEXT_PLAIN)
+                .body("GET OPTION FROM: " + sn + "\nRealtime=1\nDelay=30");
     }
 
     @GetMapping("/getrequest")
     public ResponseEntity<String> heartbeat() {
-        return ResponseEntity.ok("OK");
+        return ResponseEntity.ok()
+                .contentType(MediaType.TEXT_PLAIN)
+                .body("OK");
     }
 
     @PostMapping("/cdata")
@@ -51,7 +60,10 @@ public class BiometricoController {
             procesarMarcacionAsistencia(body);
         }
 
-        return ResponseEntity.ok("OK");
+        // Respuesta obligatoria para confirmar recepción al hardware 
+        return ResponseEntity.ok()
+                .contentType(MediaType.TEXT_PLAIN)
+                .body("OK\n");
     }
 
     private void procesarUsuarioIncrustado(String body) {
@@ -63,14 +75,11 @@ public class BiometricoController {
                 emp.setNombreCompleto(extraerValor(body, "Name="));
                 emp.setPrivilegio("14".equals(extraerValor(body, "Pri=")) ? "ADMINISTRADOR" : "USUARIO NORMAL");
                 emp.setModoVerificacion(interpretarModo(extraerValor(body, "Verify=")));
-                if (emp.getFechaCreacion() == null) {
-                    emp.setFechaCreacion(LocalDateTime.now(ZoneId.of("America/Lima")));
-                }
                 empleadoRepository.save(emp);
-                System.out.println(">>> ÉXITO: Empleado " + idBio + " sincronizado.");
+                System.out.println(">>> SINCRONIZACIÓN: Usuario " + idBio + " actualizado.");
             }
         } catch (Exception e) {
-            System.err.println(">>> ERROR en Usuario Incrustado: " + e.getMessage());
+            System.err.println(">>> ERROR OPERLOG: " + e.getMessage());
         }
     }
 
@@ -85,13 +94,14 @@ public class BiometricoController {
                     Empleado emp = empleadoRepository.findByIdBiometrico(idBio).orElse(new Empleado());
                     emp.setIdBiometrico(idBio);
                     if (campos.length > 1) emp.setNombreCompleto(campos[1].trim());
+                    
                     if (emp.getFechaCreacion() == null) {
-                        emp.setFechaCreacion(LocalDateTime.now(ZoneId.of("America/Lima")));
+                        emp.setFechaCreacion(LocalDateTime.now());
                     }
                     empleadoRepository.save(emp);
                 }
             } catch (Exception e) {
-                System.err.println(">>> ERROR en Usuario Estándar: " + e.getMessage());
+                System.err.println(">>> ERROR USER: " + e.getMessage());
             }
         }
     }
@@ -104,37 +114,44 @@ public class BiometricoController {
                 String[] campos = linea.split("\t");
                 String idBio = campos[0].trim();
                 
-                LocalDateTime ahora = LocalDateTime.now(ZoneId.of("America/Lima"));
-                LocalDate hoy = ahora.toLocalDate();
+                // OPTIMIZACIÓN CRÍTICA: Extraer la fecha/hora real de la trama 
+                // El hardware envía la hora en el segundo campo (índice 1)
+                String fechaTexto = campos[1].trim(); 
+                LocalDateTime fechaRealHardware = LocalDateTime.parse(fechaTexto, FORMATO_BIOMETRICO);
+                LocalDate diaEvento = fechaRealHardware.toLocalDate();
 
-                // Lógica de las 4 marcas
-                List<Marcacion> marcasHoy = marcacionRepository.findByIdBiometricoAndFechaDiaOrderByFechaHoraAsc(idBio, hoy);
+                // Consultamos marcas existentes del día para determinar la secuencia
+                List<Marcacion> marcasHoy = marcacionRepository.findByIdBiometricoAndFechaDiaOrderByFechaHoraAsc(idBio, diaEvento);
                 int contador = marcasHoy.size();
 
-                String tipo = switch (contador) {
-                    case 0 -> "INGRESO LABORAL";
-                    case 1 -> "INICIO REFRIGERIO";
-                    case 2 -> "FIN REFRIGERIO";
-                    case 3 -> "SALIDA LABORAL";
-                    default -> "MARCA EXTRA #" + (contador + 1);
-                };
+                String tipo = determinarTipoRegistro(contador);
 
                 Empleado emp = empleadoRepository.findByIdBiometrico(idBio).orElse(null);
 
                 Marcacion m = new Marcacion();
                 m.setIdBiometrico(idBio);
-                m.setFechaHora(ahora);
-                m.setFechaDia(hoy);
+                m.setFechaHora(fechaRealHardware); // GUARDAMOS DATOS DEL HARDWARE 
+                m.setFechaDia(diaEvento);
                 m.setTipoRegistro(tipo);
                 m.setEmpleado(emp);
 
                 marcacionRepository.save(m);
-                System.out.println(">>> ASISTENCIA REGISTRADA: " + idBio + " | " + tipo);
+                System.out.println(">>> ASISTENCIA REGISTRADA: " + idBio + " | " + tipo + " | Hora: " + fechaTexto);
 
             } catch (Exception e) {
-                System.err.println(">>> ERROR en Asistencia: " + e.getMessage());
+                System.err.println(">>> ERROR ATTLOG: " + e.getMessage());
             }
         }
+    }
+
+    private String determinarTipoRegistro(int contador) {
+        return switch (contador) {
+            case 0 -> "INGRESO LABORAL";
+            case 1 -> "INICIO REFRIGERIO";
+            case 2 -> "FIN REFRIGERIO";
+            case 3 -> "SALIDA LABORAL";
+            default -> "MARCA EXTRA #" + (contador + 1);
+        };
     }
 
     private String extraerValor(String texto, String etiqueta) {

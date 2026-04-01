@@ -38,7 +38,11 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0https://maven.apache.org/xs
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-webmvc</artifactId>
 		</dependency>
-
+		<dependency>
+    		<groupId>me.paulschwarz</groupId>
+   			<artifactId>spring-dotenv</artifactId>
+    		<version>4.0.0</version>
+		</dependency>
 		<dependency>
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>

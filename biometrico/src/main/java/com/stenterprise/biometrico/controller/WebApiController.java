@@ -8,14 +8,14 @@ import com.stenterprise.biometrico.repository.EmpleadoRepository;
 import com.stenterprise.biometrico.repository.MarcacionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
-import java.util.HashMap;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
-import java.time.LocalDateTime;
+
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -30,7 +30,8 @@ public class WebApiController {
     @Autowired
     private MarcacionRepository marcacionRepository;
 
-    // 1. LISTAR EMPLEADOS (Para que el frontend los muestre en una tabla)
+    //1. LISTAR EMPLEADOS
+     
     @GetMapping("/empleados")
     public List<EmpleadoDTO> listarEmpleados() {
         return empleadoRepository.findAll().stream().map(e -> {
@@ -43,20 +44,20 @@ public class WebApiController {
             dto.setPrivilegio(e.getPrivilegio());
             if (e.getFechaCumpleanos() != null) {
                 dto.setFechaCumpleanos(e.getFechaCumpleanos().toString());
-            } else {
-                dto.setFechaCumpleanos(null);
             }
             return dto;
         }).collect(Collectors.toList());
     }
 
-    // 2. ASISTENCIA DE HOY (Con Nombres y DNI pegados)
+    //2. ASISTENCIA DE HOY
+
     @GetMapping("/asistencia/hoy")
     public List<AsistenciaDTO> asistenciaHoy() {
-        LocalDate hoy = LocalDate.now(java.time.ZoneId.of("America/Lima"));
+        LocalDate hoy = LocalDate.now(ZoneId.of("America/Lima"));
         DateTimeFormatter formatoHora = DateTimeFormatter.ofPattern("HH:mm:ss");
 
-        return marcacionRepository.findByIdBiometricoAndFechaDiaOrderByFechaHoraAsc("", hoy) // Truco: el repo necesita un ajuste o usar findAll
+        // Usamos el método optimizado del repositorio
+        return marcacionRepository.findByFechaDia(hoy)
                 .stream() 
                 .map(m -> {
                     AsistenciaDTO dto = new AsistenciaDTO();
@@ -64,10 +65,13 @@ public class WebApiController {
                     dto.setIdBio(m.getIdBiometrico());
                     dto.setTipoRegistro(m.getTipoRegistro());
                     dto.setHora(m.getFechaHora().format(formatoHora));
+                    dto.setFecha(m.getFechaDia().toString());
                     
                     if (m.getEmpleado() != null) {
                         dto.setNombreEmpleado(m.getEmpleado().getNombreCompleto());
-                        dto.setDocumento(m.getEmpleado().getTipoDocumento() + ": " + m.getEmpleado().getNumeroDocumento());
+                        String tipo = m.getEmpleado().getTipoDocumento() != null ? m.getEmpleado().getTipoDocumento() : "DNI";
+                        String num = m.getEmpleado().getNumeroDocumento() != null ? m.getEmpleado().getNumeroDocumento() : "S/N";
+                        dto.setDocumento(tipo + ": " + num);
                     } else {
                         dto.setNombreEmpleado("DESCONOCIDO");
                         dto.setDocumento("SIN DNI");
@@ -76,30 +80,39 @@ public class WebApiController {
                 }).collect(Collectors.toList());
     }
 
-    // 3. ACTUALIZAR DNI (Para que la secretaria complete los datos desde la web)
+    //3. ACTUALIZAR DOCUMENTO
+    //Mejorado con ResponseEntity para manejo de errores en el frontend.
+    
     @PutMapping("/empleados/{id}/documento")
-    public String actualizarDocumento(@PathVariable Integer id, @RequestParam String tipo, @RequestParam String numero) {
-        Empleado e = empleadoRepository.findById(id).orElseThrow();
-        e.setTipoDocumento(tipo);
-        e.setNumeroDocumento(numero);
-        empleadoRepository.save(e);
-        return "Documento actualizado correctamente";
+    public ResponseEntity<String> actualizarDocumento(
+            @PathVariable Integer id, 
+            @RequestParam String tipo, 
+            @RequestParam String numero) {
+        
+        return empleadoRepository.findById(id)
+            .map(e -> {
+                e.setTipoDocumento(tipo);
+                e.setNumeroDocumento(numero);
+                empleadoRepository.save(e);
+                return ResponseEntity.ok("Documento actualizado correctamente");
+            })
+            .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).body("Empleado no encontrado"));
     }
     
- // 4. LOGIN (Valida nombre de usuario y password/DNI)
+    //4. LOGIN SEGURO
+     
     @PostMapping("/auth/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> credenciales) {
-        String usuario = credenciales.get("usuario"); // Ej: "Adm"
-        String password = credenciales.get("password"); // Ej: El DNI
+        String usuario = credenciales.get("usuario");
+        String password = credenciales.get("password");
 
         return empleadoRepository.findByNombreCompleto(usuario)
             .map(emp -> {
-                // Comparamos el password que configuramos en la DB
                 if (emp.getPassword() != null && emp.getPassword().equals(password)) {
                     Map<String, Object> resp = new HashMap<>();
                     resp.put("id", emp.getId());
                     resp.put("nombre", emp.getNombreCompleto());
-                    resp.put("privilegio", emp.getPrivilegio()); // ADMIN o USER
+                    resp.put("privilegio", emp.getPrivilegio());
                     resp.put("idBiometrico", emp.getIdBiometrico());
                     return ResponseEntity.ok(resp);
                 }
@@ -108,14 +121,14 @@ public class WebApiController {
             .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuario no encontrado"));
     }
 
-    // 5. EDICIÓN MANUAL (La opción de precaución para el Administrador)
+    //5. EDICIÓN MANUAL
+     
     @PostMapping("/asistencia/corregir")
     public ResponseEntity<?> corregirAsistencia(@RequestBody Marcacion nuevaMarca) {
-        // Buscamos si el empleado existe para vincularlo
         return empleadoRepository.findByIdBiometrico(nuevaMarca.getIdBiometrico())
             .map(emp -> {
                 nuevaMarca.setEmpleado(emp);
-                nuevaMarca.setEsManual(true); // Flag que creamos en SQL
+                nuevaMarca.setEsManual(true);
                 if (nuevaMarca.getFechaHora() != null) {
                     nuevaMarca.setFechaDia(nuevaMarca.getFechaHora().toLocalDate());
                 }

@@ -3,9 +3,13 @@ package com.stenterprise.biometrico.model;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
+
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
 @Table(name = "empleados")
+@EntityListeners(AuditingEntityListener.class)
 public class Empleado {
 
     @Id
@@ -39,9 +43,11 @@ public class Empleado {
     @Column(name = "password")
     private String password;
 
+    @OneToMany(mappedBy = "empleado", fetch = FetchType.LAZY)
+    private List<Marcacion> marcaciones;
+
     public Empleado() {}
 
-    // GETTERS Y SETTERS
     public Integer getId() { return id; }
     public void setId(Integer id) { this.id = id; }
     public String getIdBiometrico() { return idBiometrico; }
@@ -62,4 +68,6 @@ public class Empleado {
     public void setFechaCumpleanos(LocalDate fechaCumpleanos) { this.fechaCumpleanos = fechaCumpleanos; }
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }
+    public List<Marcacion> getMarcaciones() { return marcaciones; }
+    public void setMarcaciones(List<Marcacion> marcaciones) { this.marcaciones = marcaciones; }
 }

@@ -2,10 +2,14 @@ package com.stenterprise.biometrico.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
 import java.time.LocalDate;
 
 @Entity
 @Table(name = "marcaciones")
+@EntityListeners(AuditingEntityListener.class)
 public class Marcacion {
 
     @Id
@@ -24,7 +28,7 @@ public class Marcacion {
     @Column(name = "tipo_registro")
     private String tipoRegistro;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_empleado")
     private Empleado empleado;
 
@@ -36,7 +40,6 @@ public class Marcacion {
     
     public Marcacion() {}
 
-    // Getters y Setters
     public Integer getId() { return id; }
     public void setId(Integer id) { this.id = id; }
     public String getIdBiometrico() { return idBiometrico; }
