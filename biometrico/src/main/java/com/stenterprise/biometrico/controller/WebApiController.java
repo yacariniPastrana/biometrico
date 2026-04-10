@@ -137,4 +137,9 @@ public class WebApiController {
             })
             .orElse(ResponseEntity.badRequest().body("ID Biométrico no reconocido"));
     }
+    
+    @GetMapping("/ping")
+    public ResponseEntity<String> ping() {
+        return ResponseEntity.ok("pong");
+    }
 }
